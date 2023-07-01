@@ -44,10 +44,12 @@ def main():
     y_lf = fun_lf(x_lf)
     #high-fidelity training data
     x_hf = np.array([0., 0.4, 0.6, 1.0]).reshape((-1, 1))
-    #low-fidelity training data at x_H
-    y_lf_hf = fun_lf(x_hf)
     y_hf = fun_hf(x_hf)
+    #low-fidelity training data at x_H
+    '''
+    y_lf_hf = fun_lf(x_hf)
     X_hf = np.hstack((x_hf, y_lf_hf))
+    '''
 
     Xmin = x_lf.min(0)
     Xmax = x_lf.max(0)
@@ -59,7 +61,7 @@ def main():
 
     x_train_lf = tf.placeholder(shape=[None, D], dtype=tf.float32)
     y_train_lf = tf.placeholder(shape=[None, 1], dtype=tf.float32)
-    x_train_hf = tf.placeholder(shape=[None, D+1], dtype=tf.float32)
+    x_train_hf = tf.placeholder(shape=[None, D], dtype=tf.float32)
     y_train_hf = tf.placeholder(shape=[None, 1], dtype=tf.float32)
 
     model = DNN()
@@ -68,8 +70,11 @@ def main():
     W_hf_l, b_hf_l = model.hyper_initial(layers_hf_l)
 
     y_pred_lf = model.fnn(W_lf, b_lf, x_train_lf, Xmin, Xmax)
-    y_pred_hf_nl = model.fnn(W_hf_nl, b_hf_nl, x_train_hf, Xhmin, Xhmax)
-    y_pred_hf_l = model.fnn(W_hf_l, b_hf_l, x_train_hf, Xhmin, Xhmax)
+    #low-fidelity predictions at the high-fidelity locations
+    y_pred_lf_hf = model.fnn(W_lf, b_lf, x_train_hf, Xmin, Xmax)
+
+    y_pred_hf_nl = model.fnn(W_hf_nl, b_hf_nl, tf.concat([x_train_hf, y_pred_lf_hf], axis=-1), Xhmin, Xhmax)
+    y_pred_hf_l = model.fnn(W_hf_l, b_hf_l, tf.concat([x_train_hf, y_pred_lf_hf], axis=-1), Xhmin, Xhmax)
     y_pred_hf = y_pred_hf_l + y_pred_hf_nl
 
     loss_l2 = 0.01*tf.add_n([tf.nn.l2_loss(w_) for w_ in W_hf_nl])
@@ -90,7 +95,7 @@ def main():
     loss_c = 1.0e-3
     loss_ = 1.0
     n = 0
-    train_dict = {x_train_lf: x_lf, y_train_lf: y_lf, x_train_hf: X_hf, y_train_hf: y_hf}
+    train_dict = {x_train_lf: x_lf, y_train_lf: y_lf, x_train_hf: x_hf, y_train_hf: y_hf}
     #optimization:
     #1. Train all NNs using Adam for nmax steps or until the loss is less than 10^-3
     while n < nmax and loss_ > loss_c:
@@ -106,8 +111,8 @@ def main():
     y_lf_ref = fun_lf(x_test)
     y_hf_ref = fun_hf(x_test)
     y_lf_test = sess.run(y_pred_lf, feed_dict={x_train_lf: x_test})
-    X_test = np.hstack((x_test, y_lf_test))
-    y_hf_test = sess.run(y_pred_hf, feed_dict={x_train_hf: X_test})
+    #X_test = np.hstack((x_test, y_lf_test))
+    y_hf_test = sess.run(y_pred_hf, feed_dict={x_train_hf: x_test})
 
     plt.figure()
     plt.plot(x_lf, y_lf, 'go')
