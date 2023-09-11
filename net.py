@@ -13,7 +13,7 @@ class DNN:
             in_dim = layers[l-1]
             out_dim = layers[l]
             std = np.sqrt(2/(in_dim + out_dim))
-            weight = tf.Variable(tf.random_normal(shape=[in_dim, out_dim], stddev=std))
+            weight = tf.Variable(tf.random.normal(shape=[in_dim, out_dim], stddev=std))
             bias = tf.Variable(tf.zeros(shape=[1, out_dim]))
             W.append(weight)
             b.append(bias)

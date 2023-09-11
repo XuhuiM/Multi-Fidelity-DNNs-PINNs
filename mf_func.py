@@ -1,10 +1,11 @@
 '''
 @Multi-fidelity DNN for function approximation
-@Author: Xuhui Meng
+@Author: Xuhui Meng (xuhui_meng@hust.edu.cn)
 '''
 import os
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 from tensorflow.contrib.opt import ScipyOptimizerInterface
 import numpy as np
 import matplotlib.pyplot as plt
@@ -81,7 +82,7 @@ def main():
     loss_lf = tf.reduce_mean(tf.square(y_pred_lf - y_train_lf))
     loss_hf =  tf.reduce_mean(tf.square(y_pred_hf - y_train_hf))
     loss = loss_lf + loss_hf + loss_l2
-    train_adam = tf.train.AdamOptimizer().minimize(loss)
+    train_adam = tf.train.AdamOptimizer(learning_rate=1.0e-3).minimize(loss)
     train_lbfgs = ScipyOptimizerInterface(loss,
                                           method = 'L-BFGS-B', 
                                           options={'maxiter': 50000,
